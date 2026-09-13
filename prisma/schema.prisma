@@ -1,0 +1,169 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Employee {
+  id                String   @id @default(uuid())
+  employeeCode      String   @unique
+  fullName          String
+  email             String   @unique
+  joinDate          DateTime
+  terminationDate   DateTime?
+  employmentStatus  String   // ACTIVE, PROBATION, OFFBOARDING, TERMINATED
+  currentTitle      String
+  currentDepartment String
+  currentProject    String?
+  currentManager    String?
+  avatarUrl         String?
+  location          String?  @default("Ho Chi Minh City")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  events            EmployeeEvent[]
+  documents         Document[]
+  trainingRecords   TrainingRecord[]
+  performanceReviews PerformanceReview[]
+  competencyAssessments CompetencyAssessment[]
+  attendanceSummaries AttendanceSummary[]
+  offboardingCases  OffboardingCase[]
+}
+
+model EmployeeEvent {
+  id             String    @id @default(uuid())
+  employeeId     String
+  employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  eventType      String    // RECRUITMENT, INTERVIEW, OFFER, ONBOARD, CONTRACT, PROBATION, TRAINING, PERFORMANCE_REVIEW, COMPETENCY_REVIEW, SALARY_CHANGE, TRANSFER, APPOINTMENT, CONCURRENT_ASSIGNMENT, PROJECT_CHANGE, BUSINESS_TRIP, RESIGNATION, EXIT_INTERVIEW, HANDOVER, TERMINATION
+  eventDate      DateTime
+  effectiveFrom  DateTime?
+  effectiveTo    DateTime?
+  title          String
+  description    String?
+  oldValue       String?
+  newValue       String?
+  status         String    @default("COMPLETED") // COMPLETED, IN_PROGRESS, CANCELLED
+  sourceRecordId String?
+  createdAt      DateTime  @default(now())
+
+  documents      Document[]
+}
+
+model Document {
+  id              String    @id @default(uuid())
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  eventId         String?
+  event           EmployeeEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  documentType    String    // CV, INTERVIEW_EVALUATION, OFFER_LETTER, LABOUR_CONTRACT, PROBATION_ASSESSMENT, TRAINING_CERTIFICATE, PERFORMANCE_REVIEW, COMPETENCY_ASSESSMENT, SALARY_DECISION, TRANSFER_DECISION, APPOINTMENT_DECISION, CONCURRENT_ASSIGNMENT_DECISION, RESIGNATION_LETTER, EXIT_INTERVIEW_FORM, HANDOVER_RECORD, FINAL_TIMESHEET, TERMINATION_AGREEMENT
+  documentTitle   String
+  documentDate    DateTime
+  effectiveDate   DateTime?
+  fileName        String
+  fileType        String    // pdf, docx, png, jpg
+  sourceSystem    String    // SharePoint, OneDrive, Local HR Folder, Google Drive
+  sourcePath      String
+  sourceUrl       String?
+  version         String    @default("1.0")
+  documentStatus  String    @default("VALID") // VALID, CANCELLED, SUPERSEDED, EXPIRED, DRAFT
+  parentDocumentId String?
+  relationshipType String?  // CANCELS, SUPERSEDES, AMENDS, EXTENDS, REFERENCES
+  createdAt       DateTime  @default(now())
+
+  parentDocument  Document?  @relation("DocumentHistory", fields: [parentDocumentId], references: [id], onDelete: SetNull)
+  childDocuments  Document[] @relation("DocumentHistory")
+}
+
+model TrainingRecord {
+  id                            String   @id @default(uuid())
+  employeeId                    String
+  employee                      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  courseCode                    String
+  courseName                    String
+  trainingType                  String   // Internal, External, Certification, Workshop
+  startDate                     DateTime
+  completionDate                DateTime
+  learningHours                 Float
+  learningHoursInsideWorkingTime Float
+  learningHoursOutsideWorkingTime Float
+  score                         Float?
+  result                        String   // Passed, Distinction, Completed, In Progress
+  certificateUrl                String?
+  createdAt                     DateTime @default(now())
+}
+
+model PerformanceReview {
+  id               String   @id @default(uuid())
+  employeeId       String
+  employee         Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewPeriod     String   // 2023 H1, 2023 Annual, 2024 H1, 2024 Annual, 2025 Annual
+  reviewDate       DateTime
+  reviewType       String   // Annual, Mid-Year, Probation
+  performanceScore Float
+  rating           String   // Exceeds Expectations, Meets Expectations, Outstanding, Needs Improvement
+  reviewer         String
+  documentId       String?
+  createdAt        DateTime @default(now())
+}
+
+model CompetencyAssessment {
+  id             String            @id @default(uuid())
+  employeeId     String
+  employee       Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewPeriod   String
+  assessmentDate DateTime
+  createdAt      DateTime          @default(now())
+
+  scores         CompetencyScore[]
+}
+
+model CompetencyScore {
+  id                 String               @id @default(uuid())
+  assessmentId       String
+  assessment         CompetencyAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  competencyName     String
+  competencyCategory String               // Technical, Soft Skills, Leadership, Core Values
+  requiredLevel      Int
+  actualLevel        Int
+  gap                Int
+}
+
+model AttendanceSummary {
+  id                 String   @id @default(uuid())
+  employeeId         String
+  employee           Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  year               Int
+  month              Int
+  standardWorkingDays Int
+  actualWorkingDays  Float
+  workingHours       Float
+  paidLeaveDays      Float
+  unpaidLeaveDays    Float
+  lateCount          Int
+  earlyLeaveCount    Int
+  otHours            Float
+  weekdayOtHours     Float
+  weekendOtHours     Float
+  holidayOtHours     Float
+  createdAt          DateTime @default(now())
+}
+
+model OffboardingCase {
+  id                         String   @id @default(uuid())
+  employeeId                 String
+  employee                   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  resignationDate            DateTime
+  lastWorkingDate            DateTime
+  status                     String   // IN_PROGRESS, COMPLETED, CANCELLED
+  resignationDone            Boolean  @default(false)
+  exitInterviewDone          Boolean  @default(false)
+  handoverDone               Boolean  @default(false)
+  finalTimesheetDone         Boolean  @default(false)
+  assetReturnDone            Boolean  @default(false)
+  terminationAgreementSigned Boolean  @default(false)
+  socialInsuranceDone        Boolean  @default(false)
+  createdAt                  DateTime @default(now())
+}
