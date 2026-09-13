@@ -31,6 +31,15 @@ model Employee {
   competencyAssessments CompetencyAssessment[]
   attendanceSummaries AttendanceSummary[]
   offboardingCases  OffboardingCase[]
+
+  // Hybrid Architecture additions
+  records           Record[]
+  walletTransactions WalletTransaction[]
+  rewardRequests    RewardRequest[]
+  
+  // Phase 2 Additions
+  compensationRecords CompensationRecord[]
+  paymentRecords    PaymentRecord[]
 }
 
 model EmployeeEvent {
@@ -166,4 +175,226 @@ model OffboardingCase {
   terminationAgreementSigned Boolean  @default(false)
   socialInsuranceDone        Boolean  @default(false)
   createdAt                  DateTime @default(now())
+}
+
+// --- HYBRID METADATA DRIVEN ARCHITECTURE ---
+
+model Module {
+  id              String            @id @default(uuid())
+  name            String
+  description     String?
+  icon            String?
+  isSystem        Boolean           @default(false)
+  isActive        Boolean           @default(true)
+  lifecycleCategory String?         // RECRUITMENT, EMPLOYMENT, COMPENSATION, etc.
+  displayOrder    Int               @default(0)
+  isEmployeeRelated Boolean         @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  fields          FieldDefinition[]
+  records         Record[]
+}
+
+model FieldDefinition {
+  id              String            @id @default(uuid())
+  moduleId        String
+  module          Module            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  fieldName       String
+  fieldKey        String            // snake_case key
+  dataType        String            // TEXT, LONG_TEXT, NUMBER, INTEGER, PERCENTAGE, CURRENCY, DATE, DATETIME, BOOLEAN, SINGLE_SELECT, MULTI_SELECT, EMPLOYEE_REFERENCE, etc.
+  isRequired      Boolean           @default(false)
+  defaultValue    String?
+  selectOptions   String?           // JSON string of options
+  displayOrder    Int               @default(0)
+  isActive        Boolean           @default(true)
+  isVisible       Boolean           @default(true)
+  isEditable      Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  values          RecordValue[]
+}
+
+model Record {
+  id              String            @id @default(uuid())
+  moduleId        String
+  module          Module            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  employeeId      String?           
+  employee        Employee?         @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  values          RecordValue[]
+  relatedTo       RecordRelationship[] @relation("SourceRecord")
+  relatedFrom     RecordRelationship[] @relation("TargetRecord")
+}
+
+model RecordValue {
+  id              String            @id @default(uuid())
+  recordId        String
+  record          Record            @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  fieldId         String
+  field           FieldDefinition   @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  
+  stringValue     String?           // For TEXT, LONG_TEXT, SELECT
+  numberValue     Float?            // For NUMBER, PERCENTAGE, CURRENCY
+  dateValue       DateTime?         // For DATE, DATETIME
+  booleanValue    Boolean?          // For BOOLEAN
+}
+
+model RecordRelationship {
+  id               String           @id @default(uuid())
+  sourceRecordId   String
+  sourceRecord     Record           @relation("SourceRecord", fields: [sourceRecordId], references: [id], onDelete: Cascade)
+  targetRecordId   String
+  targetRecord     Record           @relation("TargetRecord", fields: [targetRecordId], references: [id], onDelete: Cascade)
+  relationshipType String           // RELATED_TO, CREATED_FROM, SUPERSEDES, REPLACES, CANCELS
+}
+
+// --- CAREER & COMPETENCY METADATA ---
+
+model Skill {
+  id              String            @id @default(uuid())
+  name            String
+  category        String
+  description     String?
+  maxLevel        Int               @default(5)
+  createdAt       DateTime          @default(now())
+}
+
+model Competency {
+  id              String            @id @default(uuid())
+  name            String
+  category        String
+  description     String?
+  createdAt       DateTime          @default(now())
+}
+
+model RoleProfile {
+  id              String            @id @default(uuid())
+  title           String
+  department      String?
+  level           String?
+  createdAt       DateTime          @default(now())
+}
+
+model CareerPath {
+  id              String            @id @default(uuid())
+  name            String
+  description     String?
+  createdAt       DateTime          @default(now())
+}
+
+// --- KNOWLEDGE REWARD SYSTEM ---
+
+model RewardRule {
+  id              String            @id @default(uuid())
+  ruleName        String
+  activityType    String
+  measurementUnit String
+  conversionRate  Float
+  maxReward       Float?
+  frequencyLimit  String?
+  effectiveFrom   DateTime
+  effectiveTo     DateTime?
+  status          String            @default("ACTIVE")
+  approvalRequired Boolean          @default(false)
+  createdAt       DateTime          @default(now())
+}
+
+model WalletTransaction {
+  id              String            @id @default(uuid())
+  employeeId      String
+  employee        Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  amount          Float
+  transactionType String            // EARNED, REDEEMED, EXPIRED, CANCELLED
+  description     String
+  sourceRef       String?           // Link to training record, etc.
+  status          String            @default("COMPLETED")
+  createdAt       DateTime          @default(now())
+}
+
+model RewardItem {
+  id              String            @id @default(uuid())
+  name            String
+  category        String
+  description     String?
+  coinCost        Float
+  stock           Int?
+  imageUrl        String?
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+
+  requests        RewardRequest[]
+}
+
+model RewardRequest {
+  id              String            @id @default(uuid())
+  employeeId      String
+  employee        Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  rewardItemId    String
+  rewardItem      RewardItem        @relation(fields: [rewardItemId], references: [id], onDelete: Cascade)
+  coinCost        Float
+  status          String            @default("PENDING") // PENDING, APPROVED, REJECTED, FULFILLED, CANCELLED
+  requestDate     DateTime          @default(now())
+  fulfilledDate   DateTime?
+  comments        String?
+}
+
+model AuditLog {
+  id              String            @id @default(uuid())
+  userId          String            
+  action          String            // CREATE, UPDATE, DELETE, ARCHIVE
+  entityType      String            // Module, Record, Employee, etc.
+  entityId        String
+  oldValue        String?           
+  newValue        String?           
+  timestamp       DateTime          @default(now())
+}
+// --- PHASE 2 MODELS ---
+
+model CompensationRecord {
+  id String @id @default(uuid())
+  employeeId String
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  effectiveDate DateTime
+  grossSalary Float
+  socialInsuranceSalary Float
+  baseSalary Float
+  allowance Float
+  otherAllowance Float
+  currency String
+  compensationType String
+  reason String?
+  status String @default("ACTIVE")
+  createdAt DateTime @default(now())
+  
+  allowanceComponents AllowanceComponent[]
+}
+
+model AllowanceComponent {
+  id String @id @default(uuid())
+  compensationRecordId String
+  compensationRecord CompensationRecord @relation(fields: [compensationRecordId], references: [id], onDelete: Cascade)
+  name String
+  amount Float
+  currency String
+}
+
+model PaymentRecord {
+  id String @id @default(uuid())
+  employeeId String
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  paymentType String
+  paymentDate DateTime
+  grossAmount Float
+  taxableAmount Float
+  taxAmount Float
+  netAmount Float
+  currency String
+  taxMethod String
+  paymentPeriod String
+  description String?
+  createdAt DateTime @default(now())
 }

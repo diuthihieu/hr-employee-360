@@ -75,8 +75,10 @@ function EmployeeProfileContent() {
   }
 
   const tabs = [
-    { id: 'timeline', label: 'Timeline', icon: History, count: employee.events?.length },
+    { id: 'timeline', label: 'Timeline', icon: History, count: (employee.events?.length || 0) + (employee.records?.length || 0) },
     { id: 'employment', label: 'Employment', icon: Briefcase },
+    { id: 'compensation', label: 'Compensation', icon: Award, count: employee.compensationRecords?.length },
+    { id: 'payments', label: 'Payments', icon: Clock, count: employee.paymentRecords?.length },
     { id: 'documents', label: 'Documents', icon: FileText, count: employee.documents?.length },
     { id: 'training', label: 'Training', icon: GraduationCap, count: employee.trainingRecords?.length },
     { id: 'performance', label: 'Performance', icon: TrendingUp, count: employee.performanceReviews?.length },
@@ -128,7 +130,11 @@ function EmployeeProfileContent() {
 
       {/* TAB 1: TIMELINE */}
       {activeTab === 'timeline' && (
-        <TimelineTab events={employee.events || []} onSelectDocument={(doc) => setSelectedDoc(doc)} />
+        <TimelineTab 
+          events={employee.events || []} 
+          records={employee.records || []}
+          onSelectDocument={(doc) => setSelectedDoc(doc)} 
+        />
       )}
 
       {/* TAB 2: EMPLOYMENT */}
@@ -159,6 +165,80 @@ function EmployeeProfileContent() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* TAB 3: COMPENSATION */}
+      {activeTab === 'compensation' && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+          <div className="p-4 border-b border-slate-100 bg-slate-50">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">Compensation History</h3>
+          </div>
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+              <tr>
+                <th className="px-6 py-3">Effective Date</th>
+                <th className="px-6 py-3">Type</th>
+                <th className="px-6 py-3 text-right">Gross Salary</th>
+                <th className="px-6 py-3 text-right">Allowances</th>
+                <th className="px-6 py-3 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {employee.compensationRecords?.length > 0 ? (
+                employee.compensationRecords.map((cr: any) => (
+                  <tr key={cr.id} className="hover:bg-slate-50">
+                    <td className="px-6 py-3 font-mono text-slate-600">{new Date(cr.effectiveDate).toLocaleDateString()}</td>
+                    <td className="px-6 py-3"><span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">{cr.compensationType}</span></td>
+                    <td className="px-6 py-3 text-right font-bold text-slate-900">{cr.grossSalary.toLocaleString()} {cr.currency}</td>
+                    <td className="px-6 py-3 text-right text-slate-600">{((cr.allowance || 0) + (cr.otherAllowance || 0)).toLocaleString()} {cr.currency}</td>
+                    <td className="px-6 py-3 text-center">
+                      <span className={`px-2 py-0.5 rounded font-medium ${cr.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{cr.status}</span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-400">No compensation records found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* TAB 4: PAYMENTS */}
+      {activeTab === 'payments' && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+          <div className="p-4 border-b border-slate-100 bg-slate-50">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">Bonus & Payments</h3>
+          </div>
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+              <tr>
+                <th className="px-6 py-3">Date</th>
+                <th className="px-6 py-3">Type</th>
+                <th className="px-6 py-3">Period</th>
+                <th className="px-6 py-3 text-right">Gross</th>
+                <th className="px-6 py-3 text-right">Tax</th>
+                <th className="px-6 py-3 text-right">Net Amount</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {employee.paymentRecords?.length > 0 ? (
+                employee.paymentRecords.map((pr: any) => (
+                  <tr key={pr.id} className="hover:bg-slate-50">
+                    <td className="px-6 py-3 font-mono text-slate-600">{new Date(pr.paymentDate).toLocaleDateString()}</td>
+                    <td className="px-6 py-3 font-medium text-slate-800">{pr.paymentType}</td>
+                    <td className="px-6 py-3 text-slate-500">{pr.paymentPeriod}</td>
+                    <td className="px-6 py-3 text-right text-slate-600">{pr.grossAmount.toLocaleString()}</td>
+                    <td className="px-6 py-3 text-right text-rose-600">-{pr.taxAmount.toLocaleString()}</td>
+                    <td className="px-6 py-3 text-right font-bold text-emerald-600">{pr.netAmount.toLocaleString()} {pr.currency}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-400">No payment records found.</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
 

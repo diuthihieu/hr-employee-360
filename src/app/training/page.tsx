@@ -1,74 +1,112 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { GraduationCap, Award, BookOpen, Clock, Users } from 'lucide-react';
+import { AppShell } from '@/components/layout/AppShell';
+import { GraduationCap, Search, Filter, Download, Plus, Award } from 'lucide-react';
 
 export default function TrainingPage() {
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [records, setRecords] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/employees')
-      .then((res) => res.json())
-      .then((data) => setEmployees(data));
+    fetch('/api/training')
+      .then(res => res.json())
+      .then(data => {
+        setRecords(data);
+        setLoading(false);
+      });
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="border-b border-slate-200 pb-4">
-        <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1">
-          <GraduationCap className="w-3.5 h-3.5" />
-          <span>Workforce Learning Intelligence</span>
+    <AppShell>
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center">
+              <GraduationCap className="w-6 h-6 mr-2 text-emerald-600" />
+              Training & Development
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">Track employee course completions, certifications, and learning hours.</p>
+          </div>
+          <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center shadow-sm">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Record
+          </button>
         </div>
-        <h1 className="text-xl font-bold text-slate-900 tracking-tight">Training & Development</h1>
-        <p className="text-xs text-slate-500 mt-0.5">
-          Track employee course completions, certifications, and learning hours inside & outside working time.
-        </p>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-          <span className="text-[11px] text-slate-400 font-semibold uppercase">Total Training Hours</span>
-          <div className="text-2xl font-bold text-slate-900 mt-1">68.0h</div>
+        {/* Toolbar */}
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-t-xl border border-slate-200 dark:border-slate-800 flex justify-between items-center">
+          <div className="relative w-72">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Search course or employee..." 
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm flex items-center hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300">
+              <Filter className="w-4 h-4 mr-2" /> Filter
+            </button>
+            <button className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm flex items-center hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300">
+              <Download className="w-4 h-4 mr-2" /> Export
+            </button>
+          </div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-          <span className="text-[11px] text-slate-400 font-semibold uppercase">Courses Completed</span>
-          <div className="text-2xl font-bold text-emerald-700 mt-1">3 Courses</div>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-          <span className="text-[11px] text-slate-400 font-semibold uppercase">Avg Test Score</span>
-          <div className="text-2xl font-bold text-blue-600 mt-1">91.6%</div>
-        </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-          <span className="text-[11px] text-slate-400 font-semibold uppercase font-mono">Inside Work Hours</span>
-          <div className="text-2xl font-bold text-purple-700 mt-1">48.0h</div>
+
+        {/* Data Table */}
+        <div className="bg-white dark:bg-slate-900 border border-t-0 border-slate-200 dark:border-slate-800 rounded-b-xl overflow-hidden">
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-slate-50 dark:bg-slate-950/50 text-slate-500 text-xs uppercase font-medium">
+              <tr>
+                <th className="px-6 py-3">Employee</th>
+                <th className="px-6 py-3">Course Name</th>
+                <th className="px-6 py-3">Category</th>
+                <th className="px-6 py-3">Completed On</th>
+                <th className="px-6 py-3 text-right">Score</th>
+                <th className="px-6 py-3 text-right">Hours</th>
+                <th className="px-6 py-3 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">Loading...</td>
+                </tr>
+              ) : records.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">No training records found.</td>
+                </tr>
+              ) : (
+                records.map(record => (
+                  <tr key={record.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-slate-900 dark:text-white">{record.employee?.fullName}</div>
+                      <div className="text-xs text-slate-500">{record.employee?.employeeCode} • {record.employee?.currentDepartment}</div>
+                    </td>
+                    <td className="px-6 py-4 font-medium text-slate-800 dark:text-slate-200">{record.courseName}</td>
+                    <td className="px-6 py-4"><span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded text-xs font-medium">{record.category}</span></td>
+                    <td className="px-6 py-4 font-mono text-slate-600">{new Date(record.completionDate).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-right">
+                      {record.testScore ? (
+                        <span className="font-medium text-emerald-700 dark:text-emerald-400">{record.testScore}%</span>
+                      ) : (
+                        <span className="text-slate-300">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right text-slate-600">{record.totalHours}h</td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`px-2.5 py-1 rounded text-xs font-medium ${record.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                        {record.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
-
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-2xs space-y-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-100 pb-3">
-          Employee Training Summary Directory
-        </h3>
-        <p className="text-xs text-slate-500">
-          Select an employee from the directory to view detailed course transcripts, certificates, and scores.
-        </p>
-
-        <div className="divide-y divide-slate-100 text-xs">
-          {employees.map((emp) => (
-            <div key={emp.id} className="py-3 flex items-center justify-between">
-              <div>
-                <span className="font-bold text-slate-900">{emp.fullName}</span> ({emp.employeeCode})
-                <div className="text-[11px] text-slate-500">{emp.currentTitle} • {emp.currentDepartment}</div>
-              </div>
-              <a
-                href={`/employees/${emp.id}?tab=training`}
-                className="px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded font-semibold text-xs hover:bg-emerald-100 transition-colors"
-              >
-                View Training Records
-              </a>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+    </AppShell>
   );
 }

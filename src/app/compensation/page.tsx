@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
-import { TrendingUp, Search, Filter, Download, Plus, Award } from 'lucide-react';
+import { Search, Filter, Download, Plus, Award } from 'lucide-react';
 
-export default function PerformancePage() {
+export default function CompensationPage() {
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/performance')
+    fetch('/api/compensation')
       .then(res => res.json())
       .then(data => {
         setRecords(data);
@@ -23,14 +23,14 @@ export default function PerformancePage() {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center">
-              <TrendingUp className="w-6 h-6 mr-2 text-purple-600" />
-              Performance Reviews
+              <Award className="w-6 h-6 mr-2 text-blue-600" />
+              Compensation Records
             </h1>
-            <p className="text-slate-500 text-sm mt-1">Centralized view of historical performance ratings and review cycles.</p>
+            <p className="text-slate-500 text-sm mt-1">Manage employee salary, allowances, and compensation history</p>
           </div>
-          <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center shadow-sm">
+          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center shadow-sm">
             <Plus className="w-4 h-4 mr-2" />
-            Add Review
+            Add Record
           </button>
         </div>
 
@@ -40,8 +40,8 @@ export default function PerformancePage() {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input 
               type="text" 
-              placeholder="Search employee or cycle..." 
-              className="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="Search employee..." 
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div className="flex gap-2">
@@ -56,47 +56,47 @@ export default function PerformancePage() {
 
         {/* Data Table */}
         <div className="bg-white dark:bg-slate-900 border border-t-0 border-slate-200 dark:border-slate-800 rounded-b-xl overflow-hidden">
-          <table className="w-full text-left text-sm whitespace-nowrap">
+          <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 dark:bg-slate-950/50 text-slate-500 text-xs uppercase font-medium">
               <tr>
                 <th className="px-6 py-3">Employee</th>
-                <th className="px-6 py-3">Review Period</th>
-                <th className="px-6 py-3">Reviewer</th>
-                <th className="px-6 py-3">Date</th>
-                <th className="px-6 py-3">Rating</th>
-                <th className="px-6 py-3">Score</th>
-                <th className="px-6 py-3 text-center">Status</th>
+                <th className="px-6 py-3">Effective Date</th>
+                <th className="px-6 py-3">Type</th>
+                <th className="px-6 py-3 text-right">Gross Salary</th>
+                <th className="px-6 py-3 text-right">Allowances</th>
+                <th className="px-6 py-3">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">Loading...</td>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">Loading...</td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">No performance records found.</td>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">No compensation records found.</td>
                 </tr>
               ) : (
                 records.map(record => (
                   <tr key={record.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
                     <td className="px-6 py-4">
                       <div className="font-medium text-slate-900 dark:text-white">{record.employee?.fullName}</div>
-                      <div className="text-xs text-slate-500">{record.employee?.employeeCode} • {record.employee?.currentDepartment}</div>
+                      <div className="text-xs text-slate-500">{record.employee?.employeeCode}</div>
                     </td>
-                    <td className="px-6 py-4 font-medium text-slate-800 dark:text-slate-200">{record.reviewPeriod}</td>
-                    <td className="px-6 py-4 text-slate-600">{record.reviewerName}</td>
-                    <td className="px-6 py-4 font-mono text-slate-600">{new Date(record.reviewDate).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-purple-700 dark:text-purple-400 font-semibold">{record.rating}</td>
+                    <td className="px-6 py-4">{new Date(record.effectiveDate).toLocaleDateString()}</td>
                     <td className="px-6 py-4">
-                      {record.score ? (
-                        <span className="font-medium text-slate-900 dark:text-white">{record.score}</span>
-                      ) : (
-                        <span className="text-slate-300">-</span>
-                      )}
+                      <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded text-xs font-medium border border-slate-200 dark:border-slate-700">
+                        {record.compensationType}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`px-2.5 py-1 rounded text-xs font-medium ${record.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                    <td className="px-6 py-4 text-right font-medium">
+                      {record.grossSalary.toLocaleString()} {record.currency}
+                    </td>
+                    <td className="px-6 py-4 text-right text-slate-500">
+                      {((record.allowance || 0) + (record.otherAllowance || 0)).toLocaleString()} {record.currency}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded text-xs font-medium border ${record.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
                         {record.status}
                       </span>
                     </td>

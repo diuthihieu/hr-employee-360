@@ -39,6 +39,20 @@ export async function GET(
           orderBy: [{ year: 'desc' }, { month: 'desc' }],
         },
         offboardingCases: true,
+        records: {
+          include: {
+            values: { include: { field: true } },
+            module: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        compensationRecords: {
+          include: { allowanceComponents: true },
+          orderBy: { effectiveDate: 'desc' },
+        },
+        paymentRecords: {
+          orderBy: { paymentDate: 'desc' },
+        },
       },
     });
 

@@ -13,16 +13,18 @@ import {
   ArrowRight,
   Filter,
   Search,
+  Sparkles,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { DocumentData } from '@/components/documents/DocumentViewerModal';
 
 interface TimelineTabProps {
   events: any[];
+  records?: any[];
   onSelectDocument: (doc: DocumentData) => void;
 }
 
-export function TimelineTab({ events, onSelectDocument }: TimelineTabProps) {
+export function TimelineTab({ events, records = [], onSelectDocument }: TimelineTabProps) {
   const [filterType, setFilterType] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -43,9 +45,30 @@ export function TimelineTab({ events, onSelectDocument }: TimelineTabProps) {
     EXIT_INTERVIEW: { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200', icon: UserX },
     HANDOVER: { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200', icon: FileText },
     TERMINATION: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', icon: UserX },
+    CUSTOM_MODULE: { bg: 'bg-fuchsia-50', text: 'text-fuchsia-700', border: 'border-fuchsia-200', icon: Sparkles },
   };
 
-  const filteredEvents = events.filter((ev) => {
+  // Merge legacy events and new dynamic records
+  const unifiedEvents = [
+    ...events.map(ev => ({
+      ...ev,
+      isLegacy: true,
+      timestamp: new Date(ev.eventDate).getTime(),
+    })),
+    ...records.map(rec => ({
+      id: rec.id,
+      eventType: rec.module?.name?.toUpperCase().replace(/\s+/g, '_') || 'CUSTOM_MODULE',
+      eventDate: rec.createdAt,
+      title: `${rec.module?.name || 'Record'} Added`,
+      description: rec.values?.map((v: any) => `${v.field?.fieldName}: ${v.stringValue || v.numberValue || v.dateValue || (v.booleanValue ? 'Yes' : 'No')}`).join(' | '),
+      status: 'COMPLETED',
+      documents: [],
+      isLegacy: false,
+      timestamp: new Date(rec.createdAt).getTime(),
+    }))
+  ].sort((a, b) => b.timestamp - a.timestamp); // Sort descending
+
+  const filteredEvents = unifiedEvents.filter((ev) => {
     if (filterType === 'EMPLOYMENT' && !['ONBOARD', 'CONTRACT', 'PROBATION', 'TRANSFER', 'APPOINTMENT', 'PROJECT_CHANGE', 'SALARY_CHANGE', 'CONCURRENT_ASSIGNMENT'].includes(ev.eventType)) return false;
     if (filterType === 'TRAINING' && ev.eventType !== 'TRAINING') return false;
     if (filterType === 'PERFORMANCE' && !['PERFORMANCE_REVIEW', 'COMPETENCY_REVIEW'].includes(ev.eventType)) return false;
